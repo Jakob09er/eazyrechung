@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>eazyRechnung – PDF in E-Rechnung & Rechnung erstellen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- pdf.js für späteres PDF-Parsing (läuft im Browser) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js"
+          integrity="sha512-XnW2kLJc4XQG6FhEDC3lNzzpaB0bD4b3TgQKqTFYVtZp+2eV8MZCT0F3Zt6yIq6IY0+0SJTRBTlAc8Z9ND3pAg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    if (window['pdfjsLib']) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.js";
+    }
+  </script>
+
+  <!-- jsPDF für PDF-Generierung im Browser -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+          integrity="sha512-/8aEJ0oCIrNe7Zkeme4nSWDN9AN3z0kwjiZTaVSu2CxyOjvyfC0UTWqaK0gZomqZ77gBiQv4RjXhBY7PjYxFdw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f3f4f6;
+      padding: 1.5rem;
+    }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(15,23,42,0.08);
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 1rem;
+    }
+    .brand {
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 0.03em;
+    }
+    .brand span {
+      color: #2563eb;
+    }
+    .subtitle {
+      max-width: 600px;
+      font-size: 0.9rem;
+      color: #4b5563;
+    }
+    .mode-toggle {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .mode-btn {
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.85rem;
+      background: #f9fafb;
+      cursor: pointer;
+    }
+    .mode-btn.active {
+      background: #2563eb;
+      color: white;
+      border-color: #2563eb;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr);
+      gap: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .card {
+      background: #f9fafb;
+      border-radius: 10px;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+    }
+    .card h2 {
+      margin-top: 0;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.35rem 0.45rem;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 0.85rem;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 1px rgba(37,99,235,0.4);
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+    .field-row-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin: 0.5rem 0;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6b7280;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      background: #eff6ff;
+      color: #1d4ed8;
+      margin-bottom: 0.5rem;
+    }
+    .hint {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.25rem;
+    }
+    .upload-area {
+      border: 1px dashed #cbd5f5;
+      background: #eff6ff;
+      border-radius: 10px;
+      padding: 0.75rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #1f2937;
+    }
+    .upload-area input[type="file"] {
+      margin-top: 0.5rem;
+    }
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-secondary {
+      background: white;
+      border: 1px solid #d1d5db;
+      color: #111827;
+    }
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    th, td {
+      padding: 0.25rem 0.3rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    th {
+      text-align: left;
+      font-weight: 600;
+      background: #f3f4f6;
+    }
+    td input, td select {
+      width: 100%;
+      font-size: 0.75rem;
+    }
+    .actions-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .totals {
+      font-size: 0.8rem;
+      text-align: right;
+      margin-top: 0.5rem;
+    }
+    .totals div {
+      margin: 0.1rem 0;
+    }
+    .totals strong {
+      font-weight: 700;
+    }
+    .error {
+      border-color: #dc2626 !important;
+    }
+    .error-msg {
+      font-size: 0.7rem;
+      color: #b91c1c;
+    }
+    .status {
+      font-size: 0.75rem;
+      margin-top: 0.3rem;
+      color: #4b5563;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <div class="brand"><span>eazy</span>Rechnung</div>
+      <div class="subtitle">
+        PDF-Rechnungen in E-Rechnungen (XML) umwandeln oder neue Rechnungen direkt im Browser erstellen.
+        Kostenlos, ohne Login, ohne Datenspeicherung – alles bleibt lokal auf deinem Gerät.
+      </div>
+    </div>
+  </header>
+
+  <div class="mode-toggle">
+    <button class="mode-btn active" data-mode="fromPdf">E-Rechnung aus PDF erzeugen</button>
+    <button class="mode-btn" data-mode="manual">Rechnung neu erstellen</button>
+  </div>
+
+  <div class="layout">
+    <!-- Linke Seite: Upload / Modus-Beschreibung -->
+    <section class="card" id="leftPanel">
+      <h2 id="leftTitle">1. PDF-Rechnung hochladen</h2>
+      <div class="pill">E-Rechnung aus bestehender PDF</div>
+      <p class="hint" id="leftDescription">
+        Lade hier deine bestehende PDF-Rechnung hoch. eazyRechnung liest die wichtigsten Daten aus
+        und befüllt das Formular automatisch. Du kannst alles vor dem Download noch anpassen.
+      </p>
+
+      <div id="uploadSection">
+        <div class="upload-area">
+          <div><strong>PDF-Datei auswählen</strong></div>
+          <div class="hint">Standard-PDF aus deinem Abrechnungssystem (keine eingescannten Bilder, idealerweise).</div>
+          <input type="file" id="pdfInput" accept="application/pdf">
+          <div id="uploadStatus" class="status"></div>
+        </div>
+        <div style="margin-top:0.75rem;">
+          <button class="btn-secondary" id="parsePdfBtn" disabled>PDF auslesen &amp; Formular befüllen</button>
+        </div>
+      </div>
+
+      <div id="manualInfo" style="display:none;">
+        <p>
+          In diesem Modus erstellst du eine neue Rechnung komplett im Browser. Fülle einfach das Formular aus.
+          Beim Download erhältst du eine E-Rechnung (XML) und ein passendes PDF.
+        </p>
+      </div>
+
+      <div style="margin-top:1rem; font-size:0.75rem; color:#6b7280;">
+        <strong>Hinweis:</strong> eazyRechnung führt keine Speicherung oder Übertragung deiner Daten auf einen Server durch.
+        Alle Berechnungen und Dateien entstehen ausschließlich in deinem Browser.
+      </div>
+    </section>
+
+    <!-- Rechte Seite: Formular -->
+    <section class="card">
+      <h2>2. Rechnungsdaten prüfen &amp; bearbeiten</h2>
+      <p class="hint">
+        Die Felder werden nach Möglichkeit automatisch aus deiner PDF befüllt. Du kannst alles anpassen, bevor du die E-Rechnung erzeugst.
+      </p>
+
+      <!-- Absender -->
+      <div class="section-title">Rechnungssteller</div>
+      <div class="field-row">
+        <div>
+          <label for="sellerName">Name / Firma *</label>
+          <input id="sellerName" type="text" autocomplete="off">
+        </div>
+        <div>
+          <label for="sellerVatId">USt-ID / Steuernummer</label>
+          <input id="sellerVatId" type="text" autocomplete="off">
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="sellerStreet">Straße &amp; Hausnr. *</label>
+          <input id="sellerStreet" type="text" autocomplete="off">
+        </div>
+        <div class="field-row">
+          <div>
+            <label for="sellerZip">PLZ *</label>
+            <input id="sellerZip" type="text" autocomplete="off">
+          </div>
+          <div>
+            <label for="sellerCity">Ort *</label>
+            <input id="sellerCity" type="text" autocomplete="off">
+          </div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="sellerCountry">Land</label>
+          <input id="sellerCountry" type="text" value="Deutschland" autocomplete="off">
+        </div>
+        <div>
+          <label for="sellerIban">IBAN</label>
+          <input id="sellerIban" type="text" autocomplete="off">
+        </div>
+      </div>
+
+      <!-- Empfänger -->
+      <div class="section-title">Rechnungsempfänger</div>
+      <div class="field-row">
+        <div>
+          <label for="buyerName">Name / Firma *</label>
+          <input id="buyerName" type="text" autocomplete="off">
+        </div>
+        <div>
+          <label for="buyerStreet">Straße &amp; Hausnr. *</label>
+          <input id="buyerStreet" type="text" autocomplete="off">
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="buyerZip">PLZ *</label>
+          <input id="buyerZip" type="text" autocomplete="off">
+        </div>
+        <div>
+          <label for="buyerCity">Ort *</label>
+          <input id="buyerCity" type="text" autocomplete="off">
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="buyerCountry">Land</label>
+          <input id="buyerCountry" type="text" value="Deutschland" autocomplete="off">
+        </div>
+      </div>
+
+      <!-- Rechnungsdaten -->
+      <div class="section-title">Rechnungsdaten</div>
+      <div class="field-row">
+        <div>
+          <label for="invoiceNumber">Rechnungsnummer *</label>
+          <input id="invoiceNumber" type="text" autocomplete="off">
+        </div>
+        <div>
+          <label for="invoiceDate">Rechnungsdatum *</label>
+          <input id="invoiceDate" type="date">
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="performanceDate">Leistungsdatum / Zeitraum</label>
+          <input id="performanceDate" type="text" autocomplete="off" placeholder="z.B. 01.01.2026–31.01.2026">
+        </div>
+        <div>
+          <label for="paymentTerms">Zahlungsziel</label>
+          <input id="paymentTerms" type="text" autocomplete="off" placeholder="z.B. 14 Tage netto">
+        </div>
+      </div>
+
+      <!-- Positionen -->
+      <div class="section-title">Rechnungspositionen</div>
+      <div style="overflow-x:auto;">
+        <table id="positionsTable">
+          <thead>
+          <tr>
+            <th>Beschreibung *</th>
+            <th style="width:60px;">Menge *</th>
+            <th style="width:90px;">Netto *</th>
+            <th style="width:70px;">MwSt.</th>
+            <th style="width:80px;">Steuer</th>
+            <th style="width:90px;">Brutto</th>
+            <th style="width:40px;"></th>
+          </tr>
+          </thead>
+          <tbody id="positionsBody">
+          <!-- Positionen werden dynamisch eingefügt -->
+          </tbody>
+        </table>
+      </div>
+      <div class="actions-row">
+        <button class="btn-secondary" id="addPositionBtn">+ Position hinzufügen</button>
+        <div class="totals" id="totalsBox">
+          <div>Netto 7 %: <span id="net7">0,00 €</span></div>
+          <div>Steuer 7 %: <span id="tax7">0,00 €</span></div>
+          <div>Netto 19 %: <span id="net19">0,00 €</span></div>
+          <div>Steuer 19 %: <span id="tax19">0,00 €</span></div>
+          <div><strong>Gesamt Netto:</strong> <span id="totalNet">0,00 €</span></div>
+          <div><strong>Gesamt Steuer:</strong> <span id="totalTax">0,00 €</span></div>
+          <div><strong>Gesamt Brutto:</strong> <span id="totalGross">0,00 €</span></div>
+        </div>
+      </div>
+
+      <!-- Download -->
+      <div class="section-title">Download</div>
+      <div class="actions-row">
+        <div>
+          <button class="btn-primary" id="downloadBtn" disabled>
+            E-Rechnung herunterladen
+          </button>
+          <div class="hint" id="downloadHint">
+            Im PDF-Modus lädst du eine E-Rechnung (XML) herunter. Im „Rechnung erstellen“-Modus erhältst du zusätzlich ein PDF.
+          </div>
+        </div>
+        <div id="validationErrors" style="flex:1 1 100%; font-size:0.75rem; color:#b91c1c; margin-top:0.3rem;"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+  const { jsPDF } = window.jspdf || {};
+
+  let currentMode = 'fromPdf'; // 'fromPdf' | 'manual'
+  let currentPdfFile = null;
+
+  const modeButtons = document.querySelectorAll('.mode-btn');
+  const leftTitle = document.getElementById('leftTitle');
+  const leftDescription = document.getElementById('leftDescription');
+  const uploadSection = document.getElementById('uploadSection');
+  const manualInfo = document.getElementById('manualInfo');
+  const pdfInput = document.getElementById('pdfInput');
+  const parsePdfBtn = document.getElementById('parsePdfBtn');
+  const uploadStatus = document.getElementById('uploadStatus');
+  const positionsBody = document.getElementById('positionsBody');
+  const addPositionBtn = document.getElementById('addPositionBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const validationErrorsBox = document.getElementById('validationErrors');
+  const downloadHint = document.getElementById('downloadHint');
+
+  modeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      if (mode === currentMode) return;
+      currentMode = mode;
+      updateModeUI();
+    });
+  });
+
+  function updateModeUI() {
+    modeButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === currentMode);
+    });
+    if (currentMode === 'fromPdf') {
+      leftTitle.textContent = '1. PDF-Rechnung hochladen';
+      leftDescription.textContent = 'Lade deine bestehende PDF-Rechnung hoch. eazyRechnung liest die wichtigsten Daten aus und befüllt das Formular automatisch. Du kannst alles vor dem Download noch anpassen.';
+      uploadSection.style.display = '';
+      manualInfo.style.display = 'none';
+      downloadHint.textContent = 'In diesem Modus lädst du die E-Rechnung (XML) zu deiner bestehenden PDF herunter.';
+    } else {
+      leftTitle.textContent = '1. Rechnung neu erstellen';
+      leftDescription.textContent = 'Erstelle eine neue Rechnung direkt im Browser. Fülle das Formular aus. Beim Download erhältst du eine E-Rechnung (XML) und ein passendes PDF.';
+      uploadSection.style.display = 'none';
+      manualInfo.style.display = '';
+      downloadHint.textContent = 'In diesem Modus lädst du eine E-Rechnung (XML) und ein Rechnungspdf herunter.';
+    }
+    validateForm();
+  }
+
+  // PDF Upload
+  pdfInput.addEventListener('change', () => {
+    const file = pdfInput.files[0];
+    if (!file) {
+      currentPdfFile = null;
+      parsePdfBtn.disabled = true;
+      uploadStatus.textContent = '';
+      return;
+    }
+    currentPdfFile = file;
+    parsePdfBtn.disabled = false;
+    uploadStatus.textContent = `Datei ausgewählt: ${file.name}`;
+  });
+
+  parsePdfBtn.addEventListener('click', async () => {
+    if (!currentPdfFile || !window['pdfjsLib']) return;
+    uploadStatus.textContent = 'PDF wird ausgelesen…';
+    parsePdfBtn.disabled = true;
+
+    try {
+      const arrayBuffer = await currentPdfFile.arrayBuffer();
+      const uint8 = new Uint8Array(arrayBuffer);
+      const loadingTask = pdfjsLib.getDocument({ data: uint8 });
+      const pdf = await loadingTask.promise;
+
+      let fullText = '';
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const content = await page.getTextContent();
+        const strings = content.items.map(item => item.str);
+        fullText += strings.join(' ') + '\n';
+      }
+
+      // TODO: Hier echte Parsinglogik einbauen (Rechnungsnummer, Beträge, Positionen etc.)
+      // Für den Anfang füllen wir nur Demo-Werte, damit du den Flow testen kannst.
+      applyDemoDataFromPdf(fullText);
+      uploadStatus.textContent = 'PDF ausgelesen (Demo-Daten). Formular bitte prüfen & anpassen.';
+    } catch (err) {
+      console.error(err);
+      uploadStatus.textContent = 'Fehler beim Auslesen der PDF: ' + err.message;
+    } finally {
+      parsePdfBtn.disabled = false;
+    }
+  });
+
+  function applyDemoDataFromPdf(rawText) {
+    // Demo-Mapping – später ersetzen wir das durch echte Erkennung.
+    document.getElementById('sellerName').value = 'Demo GmbH';
+    document.getElementById('sellerStreet').value = 'Musterstraße 1';
+    document.getElementById('sellerZip').value = '12345';
+    document.getElementById('sellerCity').value = 'Demostadt';
+    document.getElementById('sellerVatId').value = 'DE123456789';
+
+    document.getElementById('buyerName').value = 'Kunde AG';
+    document.getElementById('buyerStreet').value = 'Kundenweg 5';
+    document.getElementById('buyerZip').value = '54321';
+    document.getElementById('buyerCity').value = 'Kundenstadt';
+
+    document.getElementById('invoiceNumber').value = '2026-001';
+    if (!document.getElementById('invoiceDate').value) {
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById('invoiceDate').value = today;
+    }
+
+    // Positionen leeren und eine Demo-Position hinzufügen
+    positionsBody.innerHTML = '';
+    addPositionRow({
+      description: 'Dienstleistung laut Vereinbarung',
+      quantity: 1,
+      net: 100.00,
+      vatRate: 19
+    });
+
+    recalcTotals();
+    validateForm();
+  }
+
+  // Positionen-Handling
+  addPositionBtn.addEventListener('click', () => {
+    addPositionRow();
+    validateForm();
+  });
+
+  function addPositionRow(initialData) {
+    const tr = document.createElement('tr');
+    tr.classList.add('position-row');
+
+    const desc = initialData?.description || '';
+    const qty = initialData?.quantity ?? 1;
+    const net = initialData?.net ?? 0;
+    const vatRate = initialData?.vatRate ?? 19;
+
+    const vatAmount = net * qty * (vatRate / 100);
+    const gross = net * qty + vatAmount;
+
+    tr.innerHTML = `
+      <td><input type="text" class="pos-desc" value="${escapeHtml(desc)}"></td>
+      <td><input type="number" step="0.01" min="0" class="pos-qty" value="${qty}"></td>
+      <td><input type="number" step="0.01" min="0" class="pos-net" value="${net.toFixed(2)}"></td>
+      <td>
+        <select class="pos-vat">
+          <option value="0"${vatRate === 0 ? ' selected' : ''}>0 %</option>
+          <option value="7"${vatRate === 7 ? ' selected' : ''}>7 %</option>
+          <option value="19"${vatRate === 19 ? ' selected' : ''}>19 %</option>
+        </select>
+      </td>
+      <td><input type="text" class="pos-vat-amount" value="${vatAmount.toFixed(2)}" readonly></td>
+      <td><input type="text" class="pos-gross" value="${gross.toFixed(2)}" readonly></td>
+      <td><button type="button" class="btn-danger btn-remove-pos">×</button></td>
+    `;
+    positionsBody.appendChild(tr);
+
+    const inputs = tr.querySelectorAll('input, select');
+    inputs.forEach(el => el.addEventListener('input', () => {
+      recalcRow(tr);
+      recalcTotals();
+      validateForm();
+    }));
+
+    const removeBtn = tr.querySelector('.btn-remove-pos');
+    removeBtn.addEventListener('click', () => {
+      tr.remove();
+      recalcTotals();
+      validateForm();
+    });
+  }
+
+  function recalcRow(tr) {
+    const qtyInput = tr.querySelector('.pos-qty');
+    const netInput = tr.querySelector('.pos-net');
+    const vatSelect = tr.querySelector('.pos-vat');
+    const vatAmountInput = tr.querySelector('.pos-vat-amount');
+    const grossInput = tr.querySelector('.pos-gross');
+
+    const qty = parseFloat(qtyInput.value.replace(',', '.')) || 0;
+    const net = parseFloat(netInput.value.replace(',', '.')) || 0;
+    const vatRate = parseFloat(vatSelect.value);
+
+    const lineNet = qty * net;
+    const vatAmount = lineNet * (vatRate / 100);
+    const gross = lineNet + vatAmount;
+
+    vatAmountInput.value = vatAmount.toFixed(2);
+    grossInput.value = gross.toFixed(2);
+  }
+
+  function recalcTotals() {
+    const rows = positionsBody.querySelectorAll('.position-row');
+    let net7 = 0, net19 = 0, net0 = 0;
+    let tax7 = 0, tax19 = 0, tax0 = 0;
+
+    rows.forEach(tr => {
+      const qty = parseFloat(tr.querySelector('.pos-qty').value.replace(',', '.')) || 0;
+      const net = parseFloat(tr.querySelector('.pos-net').value.replace(',', '.')) || 0;
+      const vatRate = parseFloat(tr.querySelector('.pos-vat').value);
+      const lineNet = qty * net;
+      const vatAmount = lineNet * (vatRate / 100);
+
+      if (vatRate === 7) {
+        net7 += lineNet;
+        tax7 += vatAmount;
+      } else if (vatRate === 19) {
+        net19 += lineNet;
+        tax19 += vatAmount;
+      } else {
+        net0 += lineNet;
+        tax0 += vatAmount;
+      }
+    });
+
+    const overallNet = net0 + net7 + net19;
+    const overallTax = tax0 + tax7 + tax19;
+    const overallGross = overallNet + overallTax;
+
+    document.getElementById('net7').textContent = formatCurrency(net7);
+    document.getElementById('tax7').textContent = formatCurrency(tax7);
+    document.getElementById('net19').textContent = formatCurrency(net19);
+    document.getElementById('tax19').textContent = formatCurrency(tax19);
+    document.getElementById('totalNet').textContent = formatCurrency(overallNet);
+    document.getElementById('totalTax').textContent = formatCurrency(overallTax);
+    document.getElementById('totalGross').textContent = formatCurrency(overallGross);
+  }
+
+  function formatCurrency(value) {
+    return value.toFixed(2).replace('.', ',') + ' €';
+  }
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  // Validierung
+  function validateForm() {
+    validationErrorsBox.textContent = '';
+    downloadBtn.disabled = true;
+
+    const requiredIds = [
+      'sellerName', 'sellerStreet', 'sellerZip', 'sellerCity',
+      'buyerName', 'buyerStreet', 'buyerZip', 'buyerCity',
+      'invoiceNumber', 'invoiceDate'
+    ];
+    let errors = [];
+
+    requiredIds.forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.remove('error');
+      if (!el.value || el.value.trim() === '') {
+        el.classList.add('error');
+      }
+    });
+
+    const firstMissing = requiredIds.find(id => {
+      const el = document.getElementById(id);
+      return !el.value || el.value.trim() === '';
+    });
+    if (firstMissing) {
+      errors.push('Bitte alle Pflichtfelder (*) ausfüllen.');
+    }
+
+    const rows = positionsBody.querySelectorAll('.position-row');
+    if (rows.length === 0) {
+      errors.push('Mindestens eine Rechnungsposition ist erforderlich.');
+    } else {
+      rows.forEach((tr, idx) => {
+        const desc = tr.querySelector('.pos-desc');
+        const qty = tr.querySelector('.pos-qty');
+        const net = tr.querySelector('.pos-net');
+
+        [desc, qty, net].forEach(el => el.classList.remove('error'));
+
+        if (!desc.value || desc.value.trim() === '') {
+          desc.classList.add('error');
+        }
+        if (!qty.value || parseFloat(qty.value.replace(',', '.')) <= 0) {
+          qty.classList.add('error');
+        }
+        if (!net.value || parseFloat(net.value.replace(',', '.')) < 0) {
+          net.classList.add('error');
+        }
+      });
+    }
+
+    if (errors.length === 0) {
+      downloadBtn.disabled = false;
+    } else {
+      validationErrorsBox.textContent = errors.join(' ');
+    }
+  }
+
+  // Sammeln der Daten für XML/PDF
+  function collectInvoiceData() {
+    const rows = positionsBody.querySelectorAll('.position-row');
+    const positions = [];
+    rows.forEach(tr => {
+      const desc = tr.querySelector('.pos-desc').value.trim();
+      const qty = parseFloat(tr.querySelector('.pos-qty').value.replace(',', '.')) || 0;
+      const net = parseFloat(tr.querySelector('.pos-net').value.replace(',', '.')) || 0;
+      const vatRate = parseFloat(tr.querySelector('.pos-vat').value);
+      const lineNet = qty * net;
+      const vatAmount = lineNet * (vatRate / 100);
+      const gross = lineNet + vatAmount;
+      positions.push({
+        description: desc,
+        quantity: qty,
+        unitPriceNet: net,
+        vatRate,
+        lineNet,
+        vatAmount,
+        lineGross: gross
+      });
+    });
+
+    let net7 = 0, net19 = 0, net0 = 0;
+    let tax7 = 0, tax19 = 0, tax0 = 0;
+    positions.forEach(p => {
+      if (p.vatRate === 7) {
+        net7 += p.lineNet;
+        tax7 += p.vatAmount;
+      } else if (p.vatRate === 19) {
+        net19 += p.lineNet;
+        tax19 += p.vatAmount;
+      } else {
+        net0 += p.lineNet;
+        tax0 += p.vatAmount;
+      }
+    });
+
+    const overallNet = net0 + net7 + net19;
+    const overallTax = tax0 + tax7 + tax19;
+    const overallGross = overallNet + overallTax;
+
+    return {
+      seller: {
+        name: document.getElementById('sellerName').value.trim(),
+        street: document.getElementById('sellerStreet').value.trim(),
+        zip: document.getElementById('sellerZip').value.trim(),
+        city: document.getElementById('sellerCity').value.trim(),
+        country: document.getElementById('sellerCountry').value.trim(),
+        vatId: document.getElementById('sellerVatId').value.trim(),
+        iban: document.getElementById('sellerIban').value.trim()
+      },
+      buyer: {
+        name: document.getElementById('buyerName').value.trim(),
+        street: document.getElementById('buyerStreet').value.trim(),
+        zip: document.getElementById('buyerZip').value.trim(),
+        city: document.getElementById('buyerCity').value.trim(),
+        country: document.getElementById('buyerCountry').value.trim()
+      },
+      header: {
+        invoiceNumber: document.getElementById('invoiceNumber').value.trim(),
+        invoiceDate: document.getElementById('invoiceDate').value,
+        performanceDate: document.getElementById('performanceDate').value.trim(),
+        paymentTerms: document.getElementById('paymentTerms').value.trim()
+      },
+      positions,
+      totals: {
+        net0, tax0,
+        net7, tax7,
+        net19, tax19,
+        overallNet,
+        overallTax,
+        overallGross
+      }
+    };
+  }
+
+  // XML-Builder (vereinfachtes, XRechnung-nahes Template – später verfeinern)
+  function buildInvoiceXml(invoice) {
+    const esc = v => escapeHtml(String(v || ''));
+
+    const posXml = invoice.positions.map((p, idx) => `
+    <ram:IncludedSupplyChainTradeLineItem>
+      <ram:AssociatedDocumentLineDocument>
+        <ram:LineID>${idx + 1}</ram:LineID>
+      </ram:AssociatedDocumentLineDocument>
+      <ram:SpecifiedTradeProduct>
+        <ram:Name>${esc(p.description)}</ram:Name>
+      </ram:SpecifiedTradeProduct>
+      <ram:SpecifiedLineTradeAgreement>
+        <ram:GrossPriceProductTradePrice>
+          <ram:ChargeAmount>${p.unitPriceNet.toFixed(2)}</ram:ChargeAmount>
+        </ram:GrossPriceProductTradePrice>
+      </ram:SpecifiedLineTradeAgreement>
+      <ram:SpecifiedLineTradeDelivery>
+        <ram:BilledQuantity>${p.quantity.toFixed(2)}</ram:BilledQuantity>
+      </ram:SpecifiedLineTradeDelivery>
+      <ram:SpecifiedLineTradeSettlement>
+        <ram:ApplicableTradeTax>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>${p.vatRate === 0 ? 'Z' : 'S'}</ram:CategoryCode>
+          <ram:RateApplicablePercent>${p.vatRate.toFixed(2)}</ram:RateApplicablePercent>
+        </ram:ApplicableTradeTax>
+        <ram:SpecifiedTradeSettlementLineMonetarySummation>
+          <ram:LineTotalAmount>${p.lineNet.toFixed(2)}</ram:LineTotalAmount>
+        </ram:SpecifiedTradeSettlementLineMonetarySummation>
+      </ram:SpecifiedLineTradeSettlement>
+    </ram:IncludedSupplyChainTradeLineItem>
+    `).join('\n');
+
+    const nowIso = new Date().toISOString().slice(0,10);
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<rsm:CrossIndustryInvoice
+ xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+ xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100"
+ xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
+  <rsm:ExchangedDocumentContext>
+    <ram:GuidelineSpecifiedDocumentContextParameter>
+      <ram:ID>urn:cen.eu:en16931:2017</ram:ID>
+    </ram:GuidelineSpecifiedDocumentContextParameter>
+  </rsm:ExchangedDocumentContext>
+  <rsm:ExchangedDocument>
+    <ram:ID>${esc(invoice.header.invoiceNumber)}</ram:ID>
+    <ram:TypeCode>380</ram:TypeCode>
+    <ram:IssueDateTime>
+      <udt:DateTimeString format="102">${invoice.header.invoiceDate.replace(/-/g, '')}</udt:DateTimeString>
+    </ram:IssueDateTime>
+  </rsm:ExchangedDocument>
+  <rsm:SupplyChainTradeTransaction>
+    <ram:ApplicableHeaderTradeAgreement>
+      <ram:SellerTradeParty>
+        <ram:Name>${esc(invoice.seller.name)}</ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:PostcodeCode>${esc(invoice.seller.zip)}</ram:PostcodeCode>
+          <ram:LineOne>${esc(invoice.seller.street)}</ram:LineOne>
+          <ram:CityName>${esc(invoice.seller.city)}</ram:CityName>
+          <ram:CountryID>${esc(invoice.seller.country || 'DE')}</ram:CountryID>
+        </ram:PostalTradeAddress>
+        ${invoice.seller.vatId ? `<ram:SpecifiedTaxRegistration><ram:ID>${esc(invoice.seller.vatId)}</ram:ID></ram:SpecifiedTaxRegistration>` : ''}
+      </ram:SellerTradeParty>
+      <ram:BuyerTradeParty>
+        <ram:Name>${esc(invoice.buyer.name)}</ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:PostcodeCode>${esc(invoice.buyer.zip)}</ram:PostcodeCode>
+          <ram:LineOne>${esc(invoice.buyer.street)}</ram:LineOne>
+          <ram:CityName>${esc(invoice.buyer.city)}</ram:CityName>
+          <ram:CountryID>${esc(invoice.buyer.country || 'DE')}</ram:CountryID>
+        </ram:PostalTradeAddress>
+      </ram:BuyerTradeParty>
+    </ram:ApplicableHeaderTradeAgreement>
+    <ram:ApplicableHeaderTradeDelivery>
+      ${invoice.header.performanceDate ? `<ram:ActualDeliverySupplyChainEvent><ram:OccurrenceDateTime><udt:DateTimeString format="102">${nowIso.replace(/-/g,'')}</udt:DateTimeString></ram:OccurrenceDateTime></ram:ActualDeliverySupplyChainEvent>` : ''}
+    </ram:ApplicableHeaderTradeDelivery>
+    <ram:ApplicableHeaderTradeSettlement>
+      <ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>
+      ${invoice.header.paymentTerms ? `<ram:SpecifiedTradePaymentTerms><ram:Description>${esc(invoice.header.paymentTerms)}</ram:Description></ram:SpecifiedTradePaymentTerms>` : ''}
+      <ram:ApplicableTradeTax>
+        <ram:TypeCode>VAT</ram:TypeCode>
+        <ram:CategoryCode>S</ram:CategoryCode>
+        <ram:RateApplicablePercent>19.00</ram:RateApplicablePercent>
+        <ram:TaxBasisTotalAmount>${invoice.totals.net19.toFixed(2)}</ram:TaxBasisTotalAmount>
+        <ram:TaxTotalAmount>${invoice.totals.tax19.toFixed(2)}</ram:TaxTotalAmount>
+      </ram:ApplicableTradeTax>
+      <ram:ApplicableTradeTax>
+        <ram:TypeCode>VAT</ram:TypeCode>
+        <ram:CategoryCode>S</ram:CategoryCode>
+        <ram:RateApplicablePercent>7.00</ram:RateApplicablePercent>
+        <ram:TaxBasisTotalAmount>${invoice.totals.net7.toFixed(2)}</ram:TaxBasisTotalAmount>
+        <ram:TaxTotalAmount>${invoice.totals.tax7.toFixed(2)}</ram:TaxTotalAmount>
+      </ram:ApplicableTradeTax>
+      <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+        <ram:LineTotalAmount>${invoice.totals.overallNet.toFixed(2)}</ram:LineTotalAmount>
+        <ram:TaxBasisTotalAmount>${invoice.totals.overallNet.toFixed(2)}</ram:TaxBasisTotalAmount>
+        <ram:TaxTotalAmount>${invoice.totals.overallTax.toFixed(2)}</ram:TaxTotalAmount>
+        <ram:GrandTotalAmount>${invoice.totals.overallGross.toFixed(2)}</ram:GrandTotalAmount>
+      </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+    </ram:ApplicableHeaderTradeSettlement>
+    ${posXml}
+  </rsm:SupplyChainTradeTransaction>
+</rsm:CrossIndustryInvoice>`;
+  }
+
+  // PDF-Builder (einfaches, sauberes Layout)
+  function buildInvoicePdf(invoice) {
+    if (!jsPDF) return null;
+    const doc = new jsPDF();
+
+    doc.setFontSize(14);
+    doc.text('Rechnung', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Rechnungsnummer: ${invoice.header.invoiceNumber}`, 14, 22);
+    doc.text(`Rechnungsdatum: ${invoice.header.invoiceDate}`, 14, 27);
+
+    doc.setFontSize(9);
+    // Absender / Empfänger
+    let y = 35;
+    doc.text('Rechnungssteller:', 14, y);
+    y += 5;
+    doc.text(invoice.seller.name || '', 14, y);
+    y += 4;
+    doc.text(`${invoice.seller.street || ''}`, 14, y);
+    y += 4;
+    doc.text(`${invoice.seller.zip || ''} ${invoice.seller.city || ''}`, 14, y);
+    y += 4;
+    if (invoice.seller.vatId) {
+      doc.text(`USt-ID: ${invoice.seller.vatId}`, 14, y);
+      y += 4;
+    }
+    if (invoice.seller.iban) {
+      doc.text(`IBAN: ${invoice.seller.iban}`, 14, y);
+      y += 4;
+    }
+
+    y = 35;
+    doc.text('Rechnungsempfänger:', 110, y);
+    y += 5;
+    doc.text(invoice.buyer.name || '', 110, y);
+    y += 4;
+    doc.text(`${invoice.buyer.street || ''}`, 110, y);
+    y += 4;
+    doc.text(`${invoice.buyer.zip || ''} ${invoice.buyer.city || ''}`, 110, y);
+
+    // Positionstabelle
+    y += 10;
+    doc.setFontSize(9);
+    doc.text('Pos', 14, y);
+    doc.text('Beschreibung', 24, y);
+    doc.text('Menge', 100, y);
+    doc.text('Netto', 120, y);
+    doc.text('MwSt.', 145, y);
+    doc.text('Brutto', 168, y);
+    y += 2;
+    doc.line(14, y, 196, y);
+    y += 5;
+
+    invoice.positions.forEach((p, idx) => {
+      if (y > 260) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(String(idx + 1), 14, y);
+      doc.text(p.description.substring(0, 50), 24, y);
+      doc.text(p.quantity.toFixed(2), 100, y, { align: 'right' });
+      doc.text(p.unitPriceNet.toFixed(2) + ' €', 130, y, { align: 'right' });
+      doc.text(p.vatRate.toFixed(0) + ' %', 150, y, { align: 'right' });
+      doc.text(p.lineGross.toFixed(2) + ' €', 190, y, { align: 'right' });
+      y += 5;
+    });
+
+    // Summen
+    y += 5;
+    doc.line(120, y, 196, y);
+    y += 5;
+    doc.text('Gesamt Netto:', 130, y);
+    doc.text(invoice.totals.overallNet.toFixed(2) + ' €', 190, y, { align: 'right' });
+    y += 5;
+    doc.text('Gesamt Steuer:', 130, y);
+    doc.text(invoice.totals.overallTax.toFixed(2) + ' €', 190, y, { align: 'right' });
+    y += 5;
+    doc.text('Gesamt Brutto:', 130, y);
+    doc.text(invoice.totals.overallGross.toFixed(2) + ' €', 190, y, { align: 'right' });
+
+    if (invoice.header.paymentTerms) {
+      y += 10;
+      doc.setFontSize(8);
+      doc.text('Zahlungsbedingungen:', 14, y);
+      y += 4;
+      doc.text(invoice.header.paymentTerms, 14, y);
+    }
+
+    return doc;
+  }
+
+  // Download-Handling
+  downloadBtn.addEventListener('click', () => {
+    validateForm();
+    if (downloadBtn.disabled) return;
+
+    const invoice = collectInvoiceData();
+    const xmlString = buildInvoiceXml(invoice);
+
+    // Dateiname-Basename
+    let baseName = 'Rechnung';
+    if (currentMode === 'fromPdf' && currentPdfFile) {
+      const original = currentPdfFile.name;
+      baseName = original.toLowerCase().endsWith('.pdf') ? original.slice(0, -4) : original;
+    } else {
+      // Im manuellen Modus verwenden wir die Rechnungsnummer
+      baseName = invoice.header.invoiceNumber || 'Rechnung';
+    }
+
+    const xmlName = `${baseName}_eazyRechnung.xml`;
+
+    // XML als Download
+    const xmlBlob = new Blob([xmlString], { type: 'application/xml' });
+    const xmlUrl = URL.createObjectURL(xmlBlob);
+    const aXml = document.createElement('a');
+    aXml.href = xmlUrl;
+    aXml.download = xmlName;
+    document.body.appendChild(aXml);
+    aXml.click();
+    document.body.removeChild(aXml);
+    URL.revokeObjectURL(xmlUrl);
+
+    if (currentMode === 'manual' && jsPDF) {
+      const pdfDoc = buildInvoicePdf(invoice);
+      if (pdfDoc) {
+        const pdfName = `${baseName}_eazyRechnung.pdf`;
+        pdfDoc.save(pdfName);
+      }
+    }
+  });
+
+  // Initiale Defaults
+  // Eine leere Position, damit das Formular nicht "leer" ist
+  addPositionRow();
+  recalcTotals();
+  validateForm();
+  updateModeUI();
+</script>
+</body>
+</html>
