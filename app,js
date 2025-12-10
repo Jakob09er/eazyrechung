@@ -1,0 +1,276 @@
+/* ------------------------------------------------------
+   TAB NAVIGATION
+------------------------------------------------------ */
+const navLinks = document.querySelectorAll(".nav-link");
+const views = document.querySelectorAll(".view");
+
+navLinks.forEach(link => {
+    link.addEventListener("click", () => {
+        const target = link.dataset.targetView;
+
+        navLinks.forEach(l => l.classList.remove("nav-link-active"));
+        link.classList.add("nav-link-active");
+
+        views.forEach(v => v.classList.remove("view-active"));
+        document.getElementById(`view-${target}`).classList.add("view-active");
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+});
+
+/* Buttons auf Startseite */
+document.querySelectorAll("[data-go-to]").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const view = btn.dataset.goTo;
+
+        navLinks.forEach(l => {
+            l.classList.toggle("nav-link-active", l.dataset.targetView === view);
+        });
+
+        views.forEach(v => v.classList.remove("view-active"));
+        document.getElementById(`view-${view}`).classList.add("view-active");
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+});
+
+/* ------------------------------------------------------
+   FAQ ACCORDION
+------------------------------------------------------ */
+document.querySelectorAll(".faq-question").forEach(q => {
+    q.addEventListener("click", () => {
+        const item = q.closest(".faq-item");
+        const all = document.querySelectorAll(".faq-item");
+
+        all.forEach(i => {
+            if (i !== item) i.classList.remove("active");
+        });
+
+        item.classList.toggle("active");
+    });
+});
+
+/* ------------------------------------------------------
+   FORM STEPS (ACCORDION)
+------------------------------------------------------ */
+function setupFormBehavior(formId) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+
+    const steps = form.querySelectorAll(".form-step");
+
+    steps.forEach(step => {
+        const header = step.querySelector(".form-step-header");
+        const toggle = step.querySelector(".form-step-toggle");
+
+        // Toggle open/close
+        toggle.addEventListener("click", () => {
+            const isOpen = step.classList.contains("open");
+            steps.forEach(s => s.classList.remove("open"));
+            if (!isOpen) step.classList.add("open");
+        });
+    });
+
+    // CONFIRM BUTTONS
+    form.querySelectorAll("[data-confirm-step]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const stepNum = btn.dataset.confirmStep;
+            const step = form.querySelector(`[data-step="${stepNum}"]`);
+
+            if (validateStep(step)) {
+                step.classList.add("completed");
+                step.classList.remove("open");
+
+                const nextStep = form.querySelector(`[data-step="${Number(stepNum) + 1}"]`);
+                if (nextStep) nextStep.classList.add("open");
+
+                updateFinalButton(formId);
+            }
+        });
+    });
+}
+
+/* ------------------------------------------------------
+   STEP VALIDATION LOGIC
+------------------------------------------------------ */
+function validateStep(step) {
+    const requiredFields = step.querySelectorAll("input[required], input[data-required='true']");
+    let valid = true;
+
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            valid = false;
+            field.style.borderColor = "red";
+        } else {
+            field.style.borderColor = "#00000040";
+        }
+    });
+
+    return valid;
+}
+
+/* ------------------------------------------------------
+   POSITIONEN HANDLING
+------------------------------------------------------ */
+function createPositionRow(tableBodyId) {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+        <td><input type="text" class="pos-desc"></td>
+        <td><input type="number" min="0" step="0.01" class="pos-qty"></td>
+        <td><input type="number" min="0" step="0.01" class="pos-net"></td>
+        <td>
+            <select class="pos-taxrate">
+                <option value="19">19 %</option>
+                <option value="7">7 %</option>
+                <option value="0">0 %</option>
+            </select>
+        </td>
+        <td><input type="text" class="pos-tax" disabled></td>
+        <td><input type="text" class="pos-gross" disabled></td>
+        <td><button type="button" class="btn-remove-pos">X</button></td>
+    `;
+
+    document.getElementById(tableBodyId).appendChild(tr);
+
+    // Event Listener für Berechnung
+    tr.querySelectorAll("input, select").forEach(el => {
+        el.addEventListener("input", () => calculatePositionRow(tr, tableBodyId));
+    });
+
+    // Entfernen
+    tr.querySelector(".btn-remove-pos").addEventListener("click", () => {
+        tr.remove();
+        calculateTotals(tableBodyId);
+    });
+}
+
+function calculatePositionRow(row, tableBodyId) {
+    const qty = parseFloat(row.querySelector(".pos-qty").value) || 0;
+    const net = parseFloat(row.querySelector(".pos-net").value) || 0;
+    const taxRate = parseFloat(row.querySelector(".pos-taxrate").value) || 0;
+
+    const rowNet = qty * net;
+    const rowTax = rowNet * (taxRate / 100);
+    const rowGross = rowNet + rowTax;
+
+    row.querySelector(".pos-tax").value = formatCurrency(rowTax);
+    row.querySelector(".pos-gross").value = formatCurrency(rowGross);
+
+    calculateTotals(tableBodyId);
+}
+
+function calculateTotals(tableBodyId) {
+    const rows = document.querySelectorAll(`#${tableBodyId} tr`);
+
+    let totalNet = 0;
+    let totalTax = 0;
+    let totalGross = 0;
+
+    rows.forEach(row => {
+        const qty = parseFloat(row.querySelector(".pos-qty").value) || 0;
+        const net = parseFloat(row.querySelector(".pos-net").value) || 0;
+        const taxRate = parseFloat(row.querySelector(".pos-taxrate").value) || 0;
+
+        const rowNet = qty * net;
+        const rowTax = rowNet * (taxRate / 100);
+        const rowGross = rowNet + rowTax;
+
+        totalNet += rowNet;
+        totalTax += rowTax;
+        totalGross += rowGross;
+    });
+
+    // IDs unterscheiden sich je nach Modus
+    if (tableBodyId === "pdfPositionsBody") {
+        document.getElementById("pdfTotalNet").innerHTML = formatCurrency(totalNet);
+        document.getElementById("pdfTotalTax").innerHTML = formatCurrency(totalTax);
+        document.getElementById("pdfTotalGross").innerHTML = formatCurrency(totalGross);
+    } else {
+        document.getElementById("createTotalNet").innerHTML = formatCurrency(totalNet);
+        document.getElementById("createTotalTax").innerHTML = formatCurrency(totalTax);
+        document.getElementById("createTotalGross").innerHTML = formatCurrency(totalGross);
+    }
+}
+
+/* Formatierung */
+function formatCurrency(value) {
+    return value.toLocaleString("de-DE", {
+        style: "currency",
+        currency: "EUR"
+    });
+}
+
+/* ------------------------------------------------------
+   FINAL BUTTON ACTIVATION
+------------------------------------------------------ */
+function updateFinalButton(formId) {
+    const form = document.getElementById(formId);
+    const steps = form.querySelectorAll(".form-step");
+
+    let allValid = true;
+    steps.forEach(step => {
+        if (!step.classList.contains("completed")) {
+            allValid = false;
+        }
+    });
+
+    const btn = formId === "pdfInvoiceForm"
+        ? document.getElementById("pdfDownloadButton")
+        : document.getElementById("createDownloadButton");
+
+    btn.disabled = !allValid;
+}
+
+/* ------------------------------------------------------
+   PDF UPLOAD HANDLING
+------------------------------------------------------ */
+const pdfUploadTrigger = document.getElementById("pdfUploadTrigger");
+const pdfFileInput = document.getElementById("pdfFileInput");
+const pdfUploadStatus = document.getElementById("pdfUploadStatus");
+const pdfParseButton = document.getElementById("pdfParseButton");
+
+if (pdfUploadTrigger) {
+    pdfUploadTrigger.addEventListener("click", () => {
+        pdfFileInput.click();
+    });
+}
+
+if (pdfFileInput) {
+    pdfFileInput.addEventListener("change", () => {
+        const file = pdfFileInput.files[0];
+        if (file) {
+            pdfUploadStatus.textContent = `Ausgewählt: ${file.name}`;
+            pdfParseButton.disabled = false;
+        }
+    });
+}
+
+/* ------------------------------------------------------
+   POSITION BUTTONS INITIALIZE
+------------------------------------------------------ */
+document.getElementById("pdfAddPosition").addEventListener("click", () => {
+    createPositionRow("pdfPositionsBody");
+});
+
+document.getElementById("createAddPosition").addEventListener("click", () => {
+    createPositionRow("createPositionsBody");
+});
+
+/* ------------------------------------------------------
+   INIT FORMS
+------------------------------------------------------ */
+setupFormBehavior("pdfInvoiceForm");
+setupFormBehavior("createInvoiceForm");
+
+/* ------------------------------------------------------
+   DOWNLOAD BUTTONS (NO REAL LOGIC YET)
+   => echte PDF/XML-Erzeugung kommt in Schritt 2
+------------------------------------------------------ */
+document.getElementById("pdfDownloadButton").addEventListener("click", () => {
+    alert("XML-Generator wird im nächsten Schritt implementiert.");
+});
+
+document.getElementById("createDownloadButton").addEventListener("click", () => {
+    alert("PDF + XML Generator wird im nächsten Schritt implementiert.");
+});
