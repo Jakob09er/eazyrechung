@@ -67,6 +67,12 @@ html, body {
     font-size: 20px;
 }
 
+.brand-logo-img {
+    height: 36px;
+    width: auto;
+    display: block;
+}
+
 .brand-text {
     display: flex;
     flex-direction: column;
