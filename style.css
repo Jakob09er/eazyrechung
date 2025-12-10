@@ -1,0 +1,460 @@
+/* ------------------------------------------------------
+   GLOBAL STYLES
+------------------------------------------------------ */
+
+:root {
+    --bg: #ddeafd;
+    --text: #000000;
+    --primary: #1a73e8;
+    --primary-hover: #1666cf;
+    --secondary: #ffffff;
+    --secondary-border: #00000040;
+    --step-green: #2ecc71;
+    --danger: #e63946;
+
+    --radius: 8px;
+    --transition: 0.2s ease;
+}
+
+* {
+    box-sizing: border-box;
+    font-family: "Manrope", sans-serif;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* ------------------------------------------------------
+   LAYOUT: HEADER
+------------------------------------------------------ */
+
+.site-header {
+    width: 100%;
+    background: var(--bg);
+    border-bottom: 1px solid #00000020;
+    padding: 12px 20px;
+}
+
+.header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Logo */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.brand-logo {
+    width: 36px;
+    height: 36px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+}
+
+.brand-name {
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.brand-name-sub {
+    font-weight: 400;
+    font-size: 14px;
+}
+
+/* Navigation */
+.main-nav {
+    display: flex;
+    gap: 16px;
+}
+
+.nav-link {
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    transition: var(--transition);
+}
+
+.nav-link:hover {
+    background: #ffffff70;
+}
+
+.nav-link-active {
+    border-bottom: 2px solid var(--primary);
+    font-weight: 600;
+}
+
+/* ------------------------------------------------------
+   GENERAL VIEW STRUCTURE
+------------------------------------------------------ */
+
+.view {
+    display: none;
+    padding: 40px 20px;
+}
+
+.view-active {
+    display: block;
+}
+
+.view-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ------------------------------------------------------
+   HERO BLOCKS
+------------------------------------------------------ */
+
+h1 {
+    font-size: 32px;
+    margin: 0 0 8px 0;
+    font-weight: 700;
+}
+
+.hero-subtitle {
+    font-size: 18px;
+    margin-bottom: 24px;
+    font-weight: 500;
+}
+
+.hero-text p {
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+.btn-secondary {
+    background: var(--secondary);
+    border: 1px solid var(--secondary-border);
+}
+
+.btn-secondary:hover {
+    background: #ffffffd0;
+}
+
+/* ------------------------------------------------------
+   START – FAQ SECTION
+------------------------------------------------------ */
+
+.section-divider {
+    margin: 60px 0;
+    border: none;
+    border-top: 1px solid #00000030;
+}
+
+.faq-section h2 {
+    font-size: 28px;
+}
+
+.faq-subtitle {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.faq-item {
+    background: #ffffff;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+    border: 1px solid #00000020;
+}
+
+.faq-question {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 16px;
+    font-size: 16px;
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+.faq-answer {
+    padding: 0 16px 16px 16px;
+    display: none;
+    line-height: 1.5;
+}
+
+.faq-item.active .faq-answer {
+    display: block;
+}
+
+.faq-item.active .faq-toggle {
+    transform: rotate(45deg);
+}
+
+/* ------------------------------------------------------
+   SPLIT LAYOUT (Desktop)
+------------------------------------------------------ */
+
+.split-layout {
+    display: flex;
+    gap: 40px;
+}
+
+.split-left {
+    width: 50%;
+}
+
+.split-right {
+    width: 50%;
+}
+
+/* Mobile */
+@media (max-width: 900px) {
+    .split-layout {
+        flex-direction: column;
+    }
+    .split-left, .split-right {
+        width: 100%;
+    }
+}
+
+/* ------------------------------------------------------
+   FORM SECTIONS (Accordion Steps)
+------------------------------------------------------ */
+
+.form-step {
+    background: #ffffff;
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    border: 1px solid #00000020;
+}
+
+.form-step-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px;
+    cursor: pointer;
+}
+
+.form-step-toggle {
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.form-step-number {
+    font-weight: 700;
+    margin-right: 6px;
+}
+
+.form-step-title {
+    font-weight: 600;
+}
+
+.form-step-status {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--step-green);
+    background: transparent;
+    display: none;
+}
+
+.form-step.completed .form-step-status {
+    display: inline-block;
+    background: var(--step-green);
+}
+
+.form-step-body {
+    padding: 16px;
+    display: none;
+}
+
+.form-step.open .form-step-body {
+    display: block;
+}
+
+/* Form Rows */
+.form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-field {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-field label {
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.form-field input,
+.form-field select {
+    padding: 10px;
+    border-radius: var(--radius);
+    border: 1px solid #00000040;
+    font-size: 15px;
+}
+
+.field-hint {
+    font-size: 12px;
+    color: #00000080;
+    margin-top: 4px;
+}
+
+@media (max-width: 600px) {
+    .form-row {
+        flex-direction: column;
+    }
+}
+
+/* Step Confirm Button */
+.btn-step-confirm {
+    background: var(--primary);
+    color: white;
+    padding: 10px 16px;
+    margin-top: 8px;
+}
+
+.btn-step-confirm:hover {
+    background: var(--primary-hover);
+}
+
+/* ------------------------------------------------------
+   POSITIONS TABLE
+------------------------------------------------------ */
+
+.positions-wrapper {
+    padding-top: 10px;
+}
+
+.positions-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.positions-table th {
+    background: #00000010;
+    padding: 8px;
+    font-size: 14px;
+}
+
+.positions-table td {
+    padding: 8px;
+}
+
+.positions-table input,
+.positions-table select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #00000040;
+    border-radius: var(--radius);
+    font-size: 14px;
+}
+
+.btn-add-position {
+    margin-top: 12px;
+}
+
+/* Totals */
+.totals-box {
+    margin-top: 20px;
+    padding: 12px;
+    background: #ffffff;
+    border-radius: var(--radius);
+    border: 1px solid #00000020;
+}
+
+.totals-box div {
+    margin-bottom: 6px;
+    font-size: 15px;
+}
+
+/* ------------------------------------------------------
+   FINAL DOWNLOAD
+------------------------------------------------------ */
+
+.form-final {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.form-final-hint {
+    margin-bottom: 12px;
+}
+
+.validation-errors {
+    color: var(--danger);
+    margin-top: 12px;
+    font-weight: 600;
+}
+
+/* ------------------------------------------------------
+   FOOTER
+------------------------------------------------------ */
+
+.site-footer {
+    padding: 40px 0;
+    text-align: center;
+}
+
+.footer-nav a {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.footer-separator {
+    margin: 0 10px;
+}
+
+/* ------------------------------------------------------
+   UPLOAD BUTTON STATUS
+------------------------------------------------------ */
+
+.upload-status {
+    margin-top: 8px;
+    font-size: 14px;
+}
